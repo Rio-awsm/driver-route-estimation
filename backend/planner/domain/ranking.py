@@ -53,12 +53,14 @@ def explain(ranked):
         )
     if len(ranked) == 1:
         return f"Route {best.route_id} is the only route available."
-    other = ranked[1]
+    fastest = min(ranked, key=lambda score: score.duration_s)
+    other = fastest if fastest is not best else ranked[1]
+    rival = "the faster Route" if other is fastest else "Route"
     criteria = ("No Travel miles", "Severe miles", "High miles", "average risk")
     for name, mine, theirs in zip(criteria, best.sort_key, other.sort_key):
         if mine < theirs:
             return (
                 f"Route {best.route_id} wins on {name}: "
-                f"{mine:g} vs {theirs:g} on Route {other.route_id}."
+                f"{mine:g} vs {theirs:g} on {rival} {other.route_id}."
             )
     return f"Routes tie on weather risk, so Route {best.route_id} wins on travel time."

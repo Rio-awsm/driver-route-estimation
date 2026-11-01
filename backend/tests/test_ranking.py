@@ -57,6 +57,17 @@ def test_explain_only_claims_what_it_compared():
     assert explain(ranked) == "Route A wins on High miles: 5 vs 9 on Route B."
 
 
+def test_explain_says_why_the_fastest_route_lost():
+    ranked = rank_routes(
+        [
+            make_score("A", average=0.03, duration=33),
+            make_score("B", average=0.0, duration=39),
+            make_score("C", average=0.0, duration=47),
+        ]
+    )
+    assert explain(ranked) == "Route B wins on average risk: 0 vs 0.03 on the faster Route A."
+
+
 def test_explain_shows_a_short_no_travel_stretch():
     ranked = rank_routes([make_score("A", no_travel=0.4), make_score("B", no_travel=9)])
     assert "(0.4 mi)" in explain(ranked)
