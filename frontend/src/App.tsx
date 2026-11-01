@@ -1,11 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { TriangleAlertIcon } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { createPlan } from '@/api/client'
 import { Legend } from '@/components/Legend'
 import { RouteList } from '@/components/RouteList'
 import { TripForm } from '@/components/TripForm'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+const TripMap = lazy(() => import('@/map/TripMap'))
 
 export default function App() {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
@@ -39,7 +41,14 @@ export default function App() {
           />
         )}
       </aside>
-      <main className="relative bg-muted">
+      <main className="relative min-h-0 bg-muted">
+        <Suspense>
+          <TripMap
+            plan={planMutation.data ?? null}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={setSelectedRouteId}
+          />
+        </Suspense>
         <Legend />
       </main>
     </div>
