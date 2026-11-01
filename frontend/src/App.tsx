@@ -28,7 +28,7 @@ export default function App() {
         <TripForm busy={planMutation.isPending} onSubmit={planMutation.mutate} />
         {planMutation.isPending && (
           <p role="status" className="text-sm text-muted-foreground">
-            Checking routes and forecasts. Long trips can take up to a minute.
+            Checking routes and forecasts. Long trips can take a minute or two.
           </p>
         )}
         {planMutation.isError && (

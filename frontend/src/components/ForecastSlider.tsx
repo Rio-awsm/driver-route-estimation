@@ -40,7 +40,7 @@ export function ForecastSlider({ start, onChange }: Props) {
   const moment = new Date(new Date(start).getTime() + hour * HOUR_MS)
 
   return (
-    <div className="absolute inset-x-3 bottom-8 flex items-center gap-3 rounded-lg border bg-card/95 p-3 shadow-sm">
+    <div className="absolute inset-x-3 bottom-14 flex items-center gap-3 rounded-lg border bg-card/95 p-3 shadow-sm md:bottom-8">
       <Button
         size="icon"
         aria-label={playing ? 'Pause forecast' : 'Play forecast'}
