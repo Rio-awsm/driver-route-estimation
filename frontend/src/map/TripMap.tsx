@@ -54,13 +54,15 @@ export default function TripMap({ plan, selectedRouteId, onSelectRoute, ref }: P
   }, [])
 
   const draw = useCallback(() => {
-    if (!engine || !plan || !selectedRouteId) return
-    engine.overlay.setProps({
-      layers: [
-        ...heatLayers(plan, frames, hourRef.current, engine.firstLabelId),
-        ...allRouteLayers(plan, selectedRouteId, onSelectRoute),
-      ],
-    })
+    if (!engine) return
+    const layers =
+      plan && selectedRouteId
+        ? [
+            ...heatLayers(plan, frames, hourRef.current, engine.firstLabelId),
+            ...allRouteLayers(plan, selectedRouteId, onSelectRoute),
+          ]
+        : []
+    engine.overlay.setProps({ layers })
   }, [engine, plan, selectedRouteId, frames, onSelectRoute])
 
   const latestDraw = useRef(draw)

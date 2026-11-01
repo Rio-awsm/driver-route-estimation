@@ -164,10 +164,15 @@ def test_offset_departure_is_read_in_utc(fake_routes, fake_weather):
     india = dt_timezone(timedelta(hours=5, minutes=30))
     departure = (timezone.now() + timedelta(hours=2)).astimezone(india)
     body = post_plan(departure=departure.isoformat()).json()
-    expected = departure.astimezone(dt_timezone.utc).replace(minute=0, second=0, microsecond=0)
     start = datetime.fromisoformat(body["heatmap"]["start"])
-    assert start == expected
+    assert start == departure
     assert start.utcoffset() == timedelta(0)
+
+
+def test_forecast_covers_every_hour_of_the_heatmap(fake_routes, fake_weather):
+    departure = timezone.now() + timedelta(hours=2)
+    post_plan(departure=departure.isoformat())
+    assert fake_weather.end >= departure + timedelta(hours=48)
 
 
 def test_trip_longer_than_the_heatmap_keeps_its_forecast(monkeypatch, fake_weather):

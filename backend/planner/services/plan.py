@@ -127,7 +127,7 @@ def build_plan(origin, destination, departure, load_lb, interval_miles):
 
     start = _floor_hour(departure)
     last_eta = max(route_cps[-1].eta for route_cps in checkpoints)
-    end = max(start + timedelta(hours=HEATMAP_HOURS - 1), _ceil_hour(last_eta))
+    end = max(start + timedelta(hours=HEATMAP_HOURS), _ceil_hour(last_eta))
     series = open_meteo.fetch_series([*checkpoint_cells, *corridor.cells.values()], start, end)
 
     payloads, scores = {}, []
@@ -151,5 +151,5 @@ def build_plan(origin, destination, departure, load_lb, interval_miles):
         "blocked": best.no_travel_miles > 0,
         "reason": explain(ranked),
         "routes": [payloads[score.route_id] for score in ranked],
-        "heatmap": _heatmap_json(corridor, series, start, load_lb),
+        "heatmap": _heatmap_json(corridor, series, departure, load_lb),
     }
