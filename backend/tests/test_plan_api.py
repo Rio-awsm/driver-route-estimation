@@ -133,7 +133,7 @@ def test_plan_stays_under_the_minute_limit(fake_routes, fake_weather):
 def test_missing_alternatives_are_forced_with_a_via_point(monkeypatch, fake_weather):
     first = bent_route(41.0, 17)
 
-    def calculate(waypoints, departure, load_lb, alternatives):
+    def calculate(waypoints, departure, load_lb, alternatives, options=None):
         if len(waypoints) == 2:
             return [first]
         via_lat = waypoints[1][0]
@@ -148,8 +148,24 @@ def test_missing_alternatives_are_forced_with_a_via_point(monkeypatch, fake_weat
     assert len(routes) == 2
 
 
+def test_route_variants_fill_the_gap_before_any_detour(monkeypatch, fake_weather):
+    asked = []
+
+    def calculate(waypoints, departure, load_lb, alternatives, options=None):
+        asked.append(options)
+        if options == {"routeType": "shortest"}:
+            return [bent_route(37.0, 18)]
+        if options == {"avoid": "tollRoads"}:
+            return [bent_route(45.0, 19)]
+        return [bent_route(41.0, 17)]
+
+    monkeypatch.setattr(tomtom, "calculate_routes", calculate)
+    assert len(post_plan().json()["routes"]) == 3
+    assert asked == [None, {"routeType": "shortest"}, {"avoid": "tollRoads"}]
+
+
 def test_failed_detour_keeps_the_routes_already_found(monkeypatch, fake_weather):
-    def calculate(waypoints, departure, load_lb, alternatives):
+    def calculate(waypoints, departure, load_lb, alternatives, options=None):
         if len(waypoints) == 2:
             return [bent_route(41.0, 17)]
         raise UpstreamError()
@@ -235,7 +251,13 @@ def test_same_origin_and_destination_is_rejected():
     assert post_plan(destination=CHICAGO).status_code == 400
 
 
+def test_two_character_city_names_can_be_searched(monkeypatch):
+    monkeypatch.setattr(tomtom, "search_places", lambda query: [{"label": query}])
+    response = APIClient().get("/api/geocode", {"q": "北京"})
+    assert response.json() == {"results": [{"label": "北京"}]}
+
+
 def test_short_geocode_query_skips_the_provider():
-    response = APIClient().get("/api/geocode", {"q": "ab"})
+    response = APIClient().get("/api/geocode", {"q": "a"})
     assert response.json() == {"results": []}
 

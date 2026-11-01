@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useDebounced } from '@/lib/use-debounced'
 
 const DEBOUNCE_MS = 250
-const MIN_CHARS = 3
+const MIN_CHARS = 2
 
 type Props = {
   id: string
@@ -40,7 +40,7 @@ export function PlaceInput({ id, label, value, onChange }: Props) {
   const places = longEnough ? (search.data ?? []) : []
 
   function emptyMessage() {
-    if (!longEnough) return `Type at least ${MIN_CHARS} letters`
+    if (!longEnough) return `Type at least ${MIN_CHARS} characters`
     if (search.isError) return 'Address search is unavailable'
     if (search.isFetching || term !== query.trim()) return 'Searching…'
     return 'No places found'

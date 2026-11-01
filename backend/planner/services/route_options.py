@@ -7,6 +7,7 @@ from ..exceptions import NoRouteFound, UpstreamError
 REQUIRED_ROUTES = 3
 SAME_ROUTE_OVERLAP = 0.95
 OVERLAP_CELL_DEG = 0.05
+ROUTE_VARIANTS = ({"routeType": "shortest"}, {"avoid": "tollRoads"}, {"avoid": "motorways"})
 VIA_OFFSET_SHARES = (0.15, -0.15, 0.3, -0.3)
 
 
@@ -41,6 +42,15 @@ def via_point(route, offset_share):
     )
 
 
+def _add_if_new(routes, waypoints, departure, load_lb, options=None):
+    try:
+        found = tomtom.calculate_routes(waypoints, departure, load_lb, 0, options)
+    except (NoRouteFound, UpstreamError):
+        return
+    if found and not is_duplicate(found[0], routes):
+        routes.append(found[0])
+
+
 def get_route_options(origin, destination, departure, load_lb):
     ends = [(origin.lat, origin.lon), (destination.lat, destination.lon)]
     candidates = tomtom.calculate_routes(ends, departure, load_lb, alternatives=REQUIRED_ROUTES)
@@ -52,14 +62,13 @@ def get_route_options(origin, destination, departure, load_lb):
         if not is_duplicate(candidate, routes):
             routes.append(candidate)
 
+    for options in ROUTE_VARIANTS:
+        if len(routes) >= REQUIRED_ROUTES:
+            break
+        _add_if_new(routes, ends, departure, load_lb, options)
+
     for offset_share in VIA_OFFSET_SHARES:
         if len(routes) >= REQUIRED_ROUTES:
             break
-        via = via_point(routes[0], offset_share)
-        try:
-            forced = tomtom.calculate_routes([ends[0], via, ends[1]], departure, load_lb, 0)
-        except (NoRouteFound, UpstreamError):
-            continue
-        if forced and not is_duplicate(forced[0], routes):
-            routes.append(forced[0])
+        _add_if_new(routes, [ends[0], via_point(routes[0], offset_share), ends[1]], departure, load_lb)
     return routes[:REQUIRED_ROUTES]

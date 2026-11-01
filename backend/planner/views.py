@@ -8,7 +8,7 @@ from .serializers import PlanRequestSerializer
 from .services.plan import build_plan
 
 GEOCODE_CACHE_SECONDS = 24 * 60 * 60
-MIN_GEOCODE_CHARS = 3
+MIN_GEOCODE_CHARS = 2
 
 
 class HealthView(APIView):

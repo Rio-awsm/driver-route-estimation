@@ -70,6 +70,39 @@ def test_calculate_routes_sends_truck_parameters():
 
 
 @respx.mock
+def test_route_blocked_by_truck_length_retries_at_the_short_length():
+    call = respx.get(url__regex=r".*calculateRoute.*").mock(
+        side_effect=[
+            httpx.Response(400, json={"detailedError": {"code": "NO_ROUTE_FOUND"}}),
+            httpx.Response(200, json={"routes": [tomtom_route()]}),
+        ]
+    )
+    routes = tomtom.calculate_routes([(59.9, 10.7), (69.6, 18.9)], START, 10_000, alternatives=0)
+    lengths = [parse_qs(request.request.url.query.decode())["vehicleLength"] for request in call.calls]
+    assert len(routes) == 1
+    assert lengths == [["21.0"], ["16.5"]]
+
+
+@respx.mock
+def test_point_off_the_road_does_not_retry():
+    call = respx.get(url__regex=r".*calculateRoute.*").mock(
+        return_value=httpx.Response(400, json={"detailedError": {"code": "MAP_MATCHING_FAILURE"}})
+    )
+    with pytest.raises(NoRouteFound):
+        tomtom.calculate_routes([(40, -100), (41, -99)], START, 0, alternatives=0)
+    assert call.call_count == 1
+
+
+@respx.mock
+def test_route_options_are_sent_to_tomtom():
+    call = respx.get(url__regex=r".*calculateRoute.*").mock(
+        return_value=httpx.Response(200, json={"routes": [tomtom_route()]})
+    )
+    tomtom.calculate_routes([(40, -100), (41, -99)], START, 0, 0, {"avoid": "tollRoads"})
+    assert parse_qs(call.calls[0].request.url.query.decode())["avoid"] == ["tollRoads"]
+
+
+@respx.mock
 def test_routing_400_means_no_route():
     respx.get(url__regex=r".*calculateRoute.*").mock(return_value=httpx.Response(400))
     with pytest.raises(NoRouteFound):
@@ -93,6 +126,32 @@ def test_search_places_maps_results_and_encodes_the_query():
     )
     assert tomtom.search_places("St. Louis, MO?")[0] == {"label": "Chicago, IL", "lat": 41.88, "lon": -87.63}
     assert unquote(call.calls[0].request.url.path).endswith("/St. Louis, MO?.json")
+
+
+@respx.mock
+def test_search_labels_name_the_country_once():
+    call = respx.get(url__regex=r".*/search/2/search/.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "results": [
+                    {
+                        "address": {"freeformAddress": "Tokyo", "country": "Japan"},
+                        "position": {"lat": 35.6, "lon": 139.7},
+                    },
+                    {
+                        "address": {"freeformAddress": "Delhi, India", "country": "India"},
+                        "position": {"lat": 28.6, "lon": 77.2},
+                    },
+                ]
+            },
+        )
+    )
+    labels = [place["label"] for place in tomtom.search_places("To")]
+    query = parse_qs(call.calls[0].request.url.query.decode())
+    assert labels == ["Tokyo, Japan", "Delhi, India"]
+    assert query["language"] == ["en-GB"]
+    assert "countrySet" not in query
 
 
 def test_parse_series_adds_showers_and_clears_nulls():
