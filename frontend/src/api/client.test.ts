@@ -27,6 +27,19 @@ describe('API errors', () => {
   })
 })
 
+describe('network failures', () => {
+  it('replaces the raw browser error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    await expect(createPlan(request)).rejects.toThrow('The server could not be reached.')
+  })
+
+  it('keeps a cancelled search as a cancellation', async () => {
+    const aborted = new DOMException('Aborted', 'AbortError')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(aborted))
+    await expect(searchPlaces('Chic', new AbortController().signal)).rejects.toBe(aborted)
+  })
+})
+
 describe('searchPlaces', () => {
   it('encodes the query and returns the results', async () => {
     respondWith(200, '{"results":[{"label":"Denver, CO","lat":39.7,"lon":-105}]}')

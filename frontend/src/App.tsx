@@ -1,28 +1,47 @@
-import { useQuery } from '@tanstack/react-query'
-import { checkHealth } from '@/api/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMutation } from '@tanstack/react-query'
+import { TriangleAlertIcon } from 'lucide-react'
+import { useState } from 'react'
+import { createPlan } from '@/api/client'
+import { Legend } from '@/components/Legend'
+import { RouteList } from '@/components/RouteList'
+import { TripForm } from '@/components/TripForm'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function App() {
-  const health = useQuery({ queryKey: ['health'], queryFn: checkHealth, retry: false })
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
+  const planMutation = useMutation({
+    mutationFn: createPlan,
+    onSuccess: (plan) => setSelectedRouteId(plan.recommended_route),
+  })
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Weather-Aware Truck Routing</CardTitle>
-          <CardDescription>Frontend setup check</CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4">
-          {health.isPending && <Badge variant="secondary">Checking API</Badge>}
-          {health.isError && <Badge variant="destructive">API unreachable</Badge>}
-          {health.isSuccess && <Badge>API connected</Badge>}
-          <Button size="sm" onClick={() => health.refetch()}>
-            Check again
-          </Button>
-        </CardContent>
-      </Card>
-    </main>
+    <div className="grid h-dvh grid-rows-[1fr_40dvh] md:grid-cols-[400px_1fr] md:grid-rows-1">
+      <aside className="flex flex-col gap-4 overflow-y-auto border-r p-4">
+        <h1 className="font-heading text-lg font-semibold">Weather-Aware Truck Routing</h1>
+        <TripForm busy={planMutation.isPending} onSubmit={planMutation.mutate} />
+        {planMutation.isPending && (
+          <p role="status" className="text-sm text-muted-foreground">
+            Checking routes and forecasts. Long trips can take up to a minute.
+          </p>
+        )}
+        {planMutation.isError && (
+          <Alert variant="destructive">
+            <TriangleAlertIcon />
+            <AlertTitle>Could not plan this trip</AlertTitle>
+            <AlertDescription>{planMutation.error.message}</AlertDescription>
+          </Alert>
+        )}
+        {planMutation.data && (
+          <RouteList
+            plan={planMutation.data}
+            selectedRouteId={selectedRouteId}
+            onSelect={setSelectedRouteId}
+          />
+        )}
+      </aside>
+      <main className="relative bg-muted">
+        <Legend />
+      </main>
+    </div>
   )
 }

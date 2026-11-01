@@ -9,26 +9,25 @@ async function readError(response: Response) {
   return `Request failed (${response.status}).`
 }
 
-export async function checkHealth(): Promise<{ status: string }> {
-  const response = await fetch(`${API_URL}/api/health`)
-  if (!response.ok) throw new Error(await readError(response))
-  return response.json()
-}
-
-export async function createPlan(request: PlanRequest): Promise<Plan> {
-  const response = await fetch(`${API_URL}/api/plan`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, init).catch((error) => {
+    if (error.name === 'AbortError') throw error
+    throw new Error('The server could not be reached.')
   })
   if (!response.ok) throw new Error(await readError(response))
   return response.json()
 }
 
-export async function searchPlaces(query: string, signal: AbortSignal): Promise<Place[]> {
+export function createPlan(plan: PlanRequest) {
+  return request<Plan>('/api/plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(plan),
+  })
+}
+
+export async function searchPlaces(query: string, signal: AbortSignal) {
   const params = new URLSearchParams({ q: query })
-  const response = await fetch(`${API_URL}/api/geocode?${params}`, { signal })
-  if (!response.ok) throw new Error(await readError(response))
-  const body = await response.json()
+  const body = await request<{ results: Place[] }>(`/api/geocode?${params}`, { signal })
   return body.results
 }
