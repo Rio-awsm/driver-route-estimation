@@ -8,7 +8,7 @@ Built with React and Django for the Spotter full stack developer assessment.
 |---|---|
 | **Live app** | [driver-route-estimation.vercel.app](https://driver-route-estimation.vercel.app/) |
 | **Live API** | [truck-routing-api-ig4b.onrender.com/api/health](https://truck-routing-api-ig4b.onrender.com/api/health) |
-| **Video walkthrough** | *To be added* |
+| **Video walkthrough** | [Watch on Loom](https://www.loom.com/share/fb8ef7f9d27b40ce9a3567ed5851ba3d) |
 
 ![The app comparing three routes from Chicago to Denver, with a storm over the northern route](assets/app-screenshot.png)
 
